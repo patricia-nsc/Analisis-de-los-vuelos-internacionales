@@ -1,11 +1,11 @@
 ---
-title: "Análisis de los vuelos internaciones en R"
+title: "Análisis de los vuelos internacionales en R"
 subtitle: "Series de tiempo | Licenciatura en Estadística | FCEyE | UNR"
 format:
   html:
     toc: true           
-    toc-depth: 3        # niveles que se muestran
-    toc-location: right  # lo pone flotando a la izquierda
+    toc-depth: 3           # niveles que se muestran
+    toc-location: right    # lo pone flotando a la izquierda
     number-sections: true  # opcional, numera secciones
     self-contained: true
 editor: source
@@ -20,6 +20,7 @@ execute:
 
 ```{r}
 # Carga de librerias
+
 library(tsibble)
 library(dplyr)
 library(tidyverse)
@@ -53,7 +54,7 @@ La serie no es ruido blanco, tiene sentido continuar análizandola.
 
 ## Test Ljung-Box
 
-$H_0) \rho_1 = \dots = \rho_k = 0$
+$H_0) \quad \rho_1 = \dots = \rho_k = 0$
 
 ```{r}
 d_train |> 
@@ -87,8 +88,6 @@ d_train |>
 ### Estacionalidad
 
 
-
-
 ```{r}
 d_train |> 
   gg_season(Int_Flt) +
@@ -97,14 +96,45 @@ d_train |>
   theme_bw()
 ```
 
-### Grafico de subseries
+### Gráfico de subseries
 
 ```{r}
 d_train |> 
   gg_subseries(Int_Flt) +
   labs(x = "Tiempo",
        y = "Vuelos Internacionales") +
+  scale_x_yearmonth(date_breaks = "7 years", date_labels = "%Y") +
   theme_bw()
+```
+## Distribución de la cantidad de vuelos por año
+
+```{r}
+d_train |> 
+  mutate(Año = factor(year(Fecha))) |> 
+  ggplot() +
+    aes(x = Año, y = Int_Flt) +
+    geom_boxplot() +
+    labs(x = "Tiempo",
+         y = "Vuelos Internacionales") +
+    theme_bw()
+```
+
+
+## Relación entre el número medio de vuelos y el desvío de los vuelos por año
+
+
+```{r}
+d_train |> 
+  index_by(Año = year(Fecha)) |>  # index_by = group_by
+  summarise(media = mean(Int_Flt),
+            desvio = sd(Int_Flt)) |>  
+  ggplot() + 
+    aes(x = media, y = desvio, label = Año) +
+    geom_point(color = "#9984E1", size = 3) +
+    geom_text(vjust = -0.5, size = 3) +
+    labs(x = "Vuelos promedio",
+         y = "Desvío de los vuelos") +
+    theme_bw()
 ```
 
 
@@ -132,35 +162,7 @@ d_train |>
 ```
 
 
-## Distribución de la cantidad de vuelos por año
 
-```{r}
-d_train |> 
-  mutate(Año = factor(year(Fecha))) |> 
-  ggplot() +
-    aes(x = Año, y = Int_Flt) +
-    geom_boxplot() +
-    labs(x = "Tiempo",
-         y = "Vuelos Internacionales") +
-    theme_bw()
-```
-
-## Relación entre el numero medio de vuelos y el desvio de los vuelos por año
-
-
-```{r}
-d_train |> 
-  index_by(Año = year(Fecha)) |>  # index_by = group_by
-  summarise(media = mean(Int_Flt),
-            desvio = sd(Int_Flt)) |>  
-  ggplot() + 
-    aes(x = media, y = desvio, label = Año) +
-    geom_point(color = "#9984E1", size = 3) +
-    geom_text(vjust = -0.5, size = 3) +
-    labs(x = "Vuelos promedio",
-         y = "Desvío de los vuelos") +
-    theme_bw()
-```
 
 ## FACM de la primer diferencia 
 
