@@ -1,0 +1,190 @@
+---
+title: "Análisis de los vuelos internaciones en R"
+subtitle: "Series de tiempo | Licenciatura en Estadística | FCEyE | UNR"
+format:
+  html:
+    toc: true           
+    toc-depth: 3        # niveles que se muestran
+    toc-location: right  # lo pone flotando a la izquierda
+    number-sections: true  # opcional, numera secciones
+    self-contained: true
+editor: source
+lang: es
+execute: 
+  echo: true
+  warning: false
+  message: false
+---
+
+# Datos
+
+```{r}
+# Carga de librerias
+library(tsibble)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(feasts)
+```
+
+
+```{r}
+# Carga de datos
+
+d <- readr::read_csv("USA Airline Traffic Data completo.csv") |> 
+  select(Year, Month, Int_Flt) |> 
+  filter(Year >= 2004, Year <= 2013) |> 
+  mutate(Fecha = yearmonth(paste(Year, Month, sep = "-"))) |> 
+  select(-Year, -Month) |> 
+  as_tsibble(index = Fecha)
+```
+
+
+```{r}
+# Creamos un data sin las ultimas 5 obs (Ago, Sep, Oct, Nov y Dic 2013)
+
+d_train <- d |> 
+  filter(Fecha < yearmonth("2013-08"))
+```
+
+La serie no es ruido blanco, tiene sentido continuar análizandola.
+
+# Descriptivo
+
+## Test Ljung-Box
+
+$H_0) \rho_1 = \dots = \rho_k = 0$
+
+```{r}
+d_train |> 
+  features(Int_Flt, ljung_box, lag = 5)
+```
+
+
+```{r}
+map_dfr(c(6, 12, 18, 24), \(l) {
+  d_train |> 
+    features(Int_Flt, ljung_box, lag = l) |> 
+    mutate(lag = l)
+})
+```
+
+
+
+## Grafico de la serie
+
+```{r}
+d_train |> 
+  autoplot(Int_Flt) +
+  labs(x = "Tiempo",
+       y = "Vuelos Internacionales") +
+  theme_bw()
+```
+
+
+## Patrones de las series 
+
+### Estacionalidad
+
+
+
+
+```{r}
+d_train |> 
+  gg_season(Int_Flt) +
+  labs(x = "Tiempo", y = "Vuelos Internacionales") +
+  guides(colour = guide_legend(title = "Año")) +
+  theme_bw()
+```
+
+### Grafico de subseries
+
+```{r}
+d_train |> 
+  gg_subseries(Int_Flt) +
+  labs(x = "Tiempo",
+       y = "Vuelos Internacionales") +
+  theme_bw()
+```
+
+
+## Función de autocorrelación muestral del número de vuelos (FACM)
+
+```{r}
+d_train |> 
+  ACF(Int_Flt, lag_max = 60) |> 
+  autoplot() +
+  labs(x = "Rezago",
+       y = "FACM") +
+  theme_bw()
+```
+
+
+## Función de autocorrelación parcial muestral del número de vuelos (FACPM)
+
+```{r}
+d_train |> 
+  PACF(Int_Flt, lag_max = 60) |> 
+  autoplot() +
+  labs(x = "Rezago",
+       y = "FACPM") +
+  theme_bw()
+```
+
+
+## Distribución de la cantidad de vuelos por año
+
+```{r}
+d_train |> 
+  mutate(Año = factor(year(Fecha))) |> 
+  ggplot() +
+    aes(x = Año, y = Int_Flt) +
+    geom_boxplot() +
+    labs(x = "Tiempo",
+         y = "Vuelos Internacionales") +
+    theme_bw()
+```
+
+## Relación entre el numero medio de vuelos y el desvio de los vuelos por año
+
+
+```{r}
+d_train |> 
+  index_by(Año = year(Fecha)) |>  # index_by = group_by
+  summarise(media = mean(Int_Flt),
+            desvio = sd(Int_Flt)) |>  
+  ggplot() + 
+    aes(x = media, y = desvio, label = Año) +
+    geom_point(color = "#9984E1", size = 3) +
+    geom_text(vjust = -0.5, size = 3) +
+    labs(x = "Vuelos promedio",
+         y = "Desvío de los vuelos") +
+    theme_bw()
+```
+
+## FACM de la primer diferencia 
+
+```{r}
+d_train |> 
+  mutate(dif1 = difference(Int_Flt)) |> 
+  ACF(dif1, lag_max = 60) |> 
+  autoplot() +
+  labs(x = "Rezago",
+       y = "FACM") +
+  theme_bw()
+```
+
+## FACPM de la primer diferencia 
+
+```{r}
+d_train |> 
+  mutate(dif1 = difference(Int_Flt)) |> 
+  PACF(dif1, lag_max = 60) |> 
+  autoplot() +
+  labs(x = "Rezago",
+       y = "FACM") +
+  theme_bw()
+```
+
+
+
