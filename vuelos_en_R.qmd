@@ -16,7 +16,23 @@ execute:
   message: false
 ---
 
-# Datos
+Profesores: Fernanda Méndez, Facundo Sigal
+
+
+
+# Introducción y Objetivo
+
+El transporte aéreo internacional es un sector clave para la economía global, ya que conecta países, facilita el comercio, el turismo y los intercambios culturales. En particular, las empresas estadounidenses desempeñan un papel central en este mercado debido a la magnitud de su red de destinos y a la demanda constante de viajes hacia y desde Estados Unidos. Sin embargo, este tipo de actividad está sujeta a variaciones estacionales como, por ejemplo, vacaciones o a eventos imprevistos que pueden afectar el tráfico aéreo.
+
+Por eso en este trabajo se busca identificar patrones que ayuden a comprender el comportamiento del sector con el objetivo de pronosticar futuras cantidades de vuelos para ayudar a la toma de decisiones futuras.
+
+
+# Materiales
+
+Se dispone de una serie sobre el número de vuelos internacionales vendidos por mes de una aerolínea estadounidense. Fue extraida de la web [Kaggle](https://www.kaggle.com/datasets). Se analizan mediciones desde Enero $2004$ hasta Diciembre $2013$. Los últimos cinco meses del 2013 sólo se los usa para comparar las cinco primeras predicciones, realizadas en base al modelo seleccionado, con estas últimas cinco observaciones reservadas. Por lo tanto, la mayoría del trabajo se realiza con $115$ observaciones.
+
+
+
 
 ```{r}
 # Carga de librerias
@@ -48,28 +64,44 @@ d_train <- d |>
   filter(Fecha < yearmonth("2013-08"))
 ```
 
-La serie no es ruido blanco, tiene sentido continuar análizandola.
+
 
 # Descriptivo
 
+La serie tiene periodicidad mensual.
+
+
+
 ## Test Ljung-Box
 
-$H_0) \quad \rho_1 = \dots = \rho_k = 0$
+
+Se realiza el test de Ljung-Box para analizar si la serie de interés se comporta como un ruido blanco. Se plantean las siguietnes hipótesis:
+
+$H_0)$ $\rho_1 = \dots = \rho_k = 0 \quad \quad  k \in \{6, 12, 18, 24\}$
+
+$H_1)$ Al menos un $\rho_i$ es distinto de cero. $\quad i=\overline{1,k}$
+
+
+
 
 ```{r}
-d_train |> 
-  features(Int_Flt, ljung_box, lag = 5)
-```
 
-
-```{r}
 map_dfr(c(6, 12, 18, 24), \(l) {
   d_train |> 
     features(Int_Flt, ljung_box, lag = l) |> 
     mutate(lag = l)
-})
+}) |> 
+  select(lag, everything()) |> # Para que el 'lag' sea la primer columna
+  knitr::kable(
+    caption = "Pruebas Ljung-Box",
+    col.names = c("k", "Estadística", "p-value"),
+    digits = 4,
+    align = "c"
+  )
 ```
 
+
+Con un nivel de significación del 5% y en base a la evidencia muestral, se rechaza la hipótesis nula de ausencia de autocorrelación, para los cuatro rezagos considerados ($p-value < 0.001$). Consecuentemente, la serie presenta dependencia temporal y no puede modelarse como ruido blanco. Esto justifica continuar con el análisis de su estructura temporal.
 
 
 ## Grafico de la serie
@@ -83,6 +115,15 @@ d_train |>
 ```
 
 
+
+
+En los períodos 2004-2008 y 2009-2013, la serie parece tener una tendencia a crecer. A mediados
+de 2008 ocurre una baja, que puede interpretarse como un valor atípico. 
+
+En el segundo semestre del 2009, hay un mes en el que se observa un bajo número de vuelos, es casi tan bajo como el número de vuelos al comienzo de la serie. Este valor también puede ser interpretado como un *outlier*.
+
+
+
 ## Patrones de las series 
 
 ### Estacionalidad
@@ -90,11 +131,24 @@ d_train |>
 
 ```{r}
 d_train |> 
-  gg_season(Int_Flt) +
-  labs(x = "Tiempo", y = "Vuelos Internacionales") +
-  guides(colour = guide_legend(title = "Año")) +
+  mutate(
+    mes = month(Fecha, label = TRUE, abbr = TRUE), # abbr=T abrevia meses
+    anio = year(Fecha)
+  ) |> 
+  ggplot(aes(x = mes, y = Int_Flt,
+             group = anio, color = factor(anio))) +
+  geom_line() +
+  labs(
+    x = "Mes",
+    y = "Número de Vuelos Internacionales",
+    color = "Año"
+  ) +
   theme_bw()
 ```
+
+El 2004 parece presentar valores más bajos que el resto de los años, puede deberse a la leve tendencia a crecer de la serie en los años 2004-2008 anteriormente destacada. También se observan valores levemente bajos en algunos meses del 2009, reflejando el segundo período (2009-2013) con aparente tendencia a crecer luego de la baja del 2008. 
+
+
 
 ### Gráfico de subseries
 
@@ -106,6 +160,15 @@ d_train |>
   scale_x_yearmonth(date_breaks = "7 years", date_labels = "%Y") +
   theme_bw()
 ```
+
+En promedio, los meses en que menos vuelos se venden son Febrero, Septiembre, Octubre y Noviembre. En los que más se venden son Julio y Agosto. Este fénomeno probablemente sea debido a que los estadounidenses reservan vuelos para tomar vacaciones en los meses de verano. 
+
+
+De manera general, en todos los años parece presentarse el mismo comportamiento observándose un patrón estacional estable. 
+
+
+
+
 ## Distribución de la cantidad de vuelos por año
 
 ```{r}
@@ -120,25 +183,46 @@ d_train |>
 ```
 
 
+
+Por un lado, la cantidad mediana de vuelos anual parece ir aumentando con el correr de los años en los períodos 2004-2008 y 2009-2013. Esto se condice con las leves tendencias crecientes vistas anteriormente. Se observa también una baja entre el número mediano de vuelos del 2008 y el del 2009, reflejando el mencionado cambio de nivel ocurrido en 2008. 
+
+Por otro lado, parece que los números de vuelos vendidos en los meses varían similarmente en todos los años, es decir, la variancia de la serie parece ser constante a través del tiempo. 
+
+
 ## Relación entre el número medio de vuelos y el desvío de los vuelos por año
 
 
 ```{r}
 d_train |> 
-  index_by(Año = year(Fecha)) |>  # index_by = group_by
+  index_by(Año = year(Fecha)) |>  # index_by = group_by (por el tsibble)
   summarise(media = mean(Int_Flt),
             desvio = sd(Int_Flt)) |>  
   ggplot() + 
     aes(x = media, y = desvio, label = Año) +
     geom_point(color = "#9984E1", size = 3) +
     geom_text(vjust = -0.5, size = 3) +
+    ggpubr::stat_cor(aes(label = paste("r", after_stat(r), # agrego r 
+                                       sep = " ~ '=' ~ ")),
+                     method = "pearson",
+                     label.x.npc = "left",
+                     label.y.npc = "top") +
     labs(x = "Vuelos promedio",
-         y = "Desvío de los vuelos") +
+         y = "Desvío de los vuelos",
+         caption = "r: Coeficiente de correlación de Pearson estimado") +
     theme_bw()
 ```
 
+Sin tener en cuenta el 2008, a medida que el promedio de vuelos aumenta, el desvío de los vuelos parece mantenerse relativamente constante ($r=0.32$). Esto sugiere que la cantidad de vuelos media no parece guardar relación con el desvío de los vuelos, y consecuentemente con la variancia de los mismos. Este resultado junto al anterior, indican que no sería necesario estabilizar la variancia de la serie aplicando transformaciones como las de Box-Cox o logarítimicas a la hora de ajustar modelos.
 
-## Función de autocorrelación muestral del número de vuelos (FACM)
+
+Considerando todo lo expuesto, la serie parece ser no estacionaria en media, presentar pauta estacional y ser estacionaria en variancia.
+
+Para describir el comportamiento de las autocorrelaciones se presentan la Función de autocorrelación muestral (FACM) y la Función de autocorrelación parcial muestral (FACPM) del número de vuelos.
+
+
+
+## FACM del número de vuelos 
+
 
 ```{r}
 d_train |> 
@@ -150,7 +234,7 @@ d_train |>
 ```
 
 
-## Función de autocorrelación parcial muestral del número de vuelos (FACPM)
+## FACPM del número de vuelos 
 
 ```{r}
 d_train |> 
@@ -162,31 +246,91 @@ d_train |>
 ```
 
 
+En la FACM, los coeficientes estimados de los rezagos 12, 24, 36, 48, etc, presentan valores significativos altos y van decayendo lentamente. Esto se condice con lo anteriormente mencionado de que la serie tiene, teniendo en cuenta que la periodicidad de la serie es mensual,  aparentemente, una componente estacional marcada. 
+
+Dada esta no estacionariedad en la parte estacional de la serie, se continúa el trabajo analizando las características de la primera diferencia estacional.
 
 
-## FACM de la primer diferencia 
-
-```{r}
-d_train |> 
-  mutate(dif1 = difference(Int_Flt)) |> 
-  ACF(dif1, lag_max = 60) |> 
-  autoplot() +
-  labs(x = "Rezago",
-       y = "FACM") +
-  theme_bw()
-```
-
-## FACPM de la primer diferencia 
+## FACM de la primer diferencia estacional
 
 ```{r}
 d_train |> 
-  mutate(dif1 = difference(Int_Flt)) |> 
-  PACF(dif1, lag_max = 60) |> 
+  mutate(dif_estacional = difference(Int_Flt, lag = 12)) |> 
+  ACF(dif_estacional, lag_max = 60) |> 
   autoplot() +
-  labs(x = "Rezago",
-       y = "FACM") +
+  labs(
+    x = "Rezago",
+    y = "FACM"
+  ) +
   theme_bw()
 ```
+
+## FACPM de la primer diferencia estacional
+
+```{r}
+d_train |> 
+  mutate(dif_estacional = difference(Int_Flt, lag = 12)) |> 
+  PACF(dif_estacional, lag_max = 60) |> 
+  autoplot() +
+  labs(
+    x = "Rezago",
+    y = "FACPM"
+  ) +
+  theme_bw()
+```
+
+
+En la parte estacional de la FACM de la serie diferenciada, sólo el bastón del rezago 48 es significativo. Esto quiere decir que se logró la estacionariedad en la parte estacional.
+
+Los coeficientes estimados de la parte regular, de la FACM de la primera diferencia estacional, son significativos y parecen ir decayendo lentamente, sugiriendo que la parte regular tampoco es estacionaria. Esto podría deberse a las tendencias crecientes observadas con anterioridad. 
+
+Acorde a esto, también se analiza qué ocurre si también se toma una diferencia regular.
+
+
+## FACM de la primera diferencia estacional y regular
+
+
+```{r}
+d_train |> 
+  mutate(
+    dif_doble = Int_Flt |> 
+      difference(lag = 12) |>  # dif estacional
+      difference()             # dif regular
+  ) |> 
+  ACF(dif_doble, lag_max = 60) |> 
+  autoplot() +
+  labs(
+    x = "Rezago",
+    y = "FACM"
+  ) +
+  theme_bw()
+```
+
+
+## FACPM de la primera diferencia estacional y regular
+
+
+```{r}
+d_train |> 
+  mutate(
+    dif_doble = Int_Flt |> 
+      difference(lag = 12) |>  # dif estacional
+      difference()             # dif regular
+  ) |> 
+  PACF(dif_doble, lag_max = 60) |> 
+  autoplot() +
+  labs(
+    x = "Rezago",
+    y = "FACPM"
+  ) +
+  theme_bw()
+```
+
+
+En la FACM de la serie con ambas diferencias, en la parte estacional sólo se observa un bastón significativo que corresponde al rezago 12 y en la parte regular se observan tres significativos. De esto de desprende que estos dos recursos conducen a la estacionariedad tanto en la parte regular como en la estacional.
+
+
+
 
 
 
