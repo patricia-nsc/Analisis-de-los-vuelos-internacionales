@@ -407,9 +407,15 @@ modelo_1 |>  # augment() añade los residuos automáticamente
 ```
 
 
+
+La inspección visual del gráfico de los residuos sugiere que los residuos del modelo 1 tendrían media cero y variancia constante.
+
+
 <!-- Supuesto 2: residuos son RB -->
 
 ```{r}
+#| fig-width: 8
+
 # ACF de residuos modelo 1
 acf_modelo_1 <- modelo_1 |> 
   augment() |> 
@@ -429,15 +435,23 @@ pacf_modelo_1 <- modelo_1 |>
 acf_modelo_1 + pacf_modelo_1
 ```
 
+Casi todos los coeficientes de la FACM y FACPM son, de manera individual, significativamente distintos de cero. Sin embargo, el hecho de que algunos sí son significativos no conduce a conclusiones claras sobre la estructura de correlación de los residuos. 
+
+
 ```{r}
 # ljung-box para residuos modelo 1
 # Ho) p1 = ... = p20 = 0 , p=0.27 --> residuos = RB
 
-modelo_1 |> 
+pv_ljung_modelo_1 <- modelo_1 |> 
   augment() |> 
-  features(.innov, ljung_box, lag = 20, dof = 2) # dof = degrees of freedom = # parametros^
+  features(.innov, ljung_box, lag = 20, dof = 2) |>  # dof = degrees of freedom = # parametros^
+  pull(lb_pvalue)
+
+pv_ljung_modelo_1
 ```
 
+
+Por este motivo, se utiliza un recurso que evalúe a todos los primeros coeficientes de la FAC de manera conjunta. Se realiza el test de Ljung-Box y se concluye en base a la evidencia muestral que los primeros 20 coeficientes de los residuos del modelo son nulos conjuntamente, es decir, los residuos del modelo 1 son ruido blanco a un 5% de significación ($p-value=$ `r pv_ljung_modelo_1`).
 
 
 <!-- Supuesto 3: residuos normales -->
@@ -452,6 +466,9 @@ modelo_1 |>
   labs(y = "Cuantiles teóricos", x = "Cuantiles observados") +
   theme_bw()
 ```
+
+A partir de la visualización del gráfico cuantil-cuantil, los puntos no parecen ubicarse sobre una línea lo cual podría estar sugiriendo que los residuos no siguen una distribución normal.
+
 
 ```{r}
 # test normalidad sobre residuos modelo 1
@@ -468,13 +485,20 @@ pv_shapiro_modelo_1 <- shapiro_modelo_1$p.value
 shapiro_modelo_1
 ```
 
-<!-- Supuesto 4: parametros no redundantes -->
+Se realiza la prueba de Shapiro-Wilk y se concluye en base a la evidencia muestral que los residuos del modelo 1 no siguen una distribución normal a un 5% de significación ($p-value=$ `r pv_shapiro_modelo_1`).
+
+
+<!-- Supuesto 4: todos los parametros != 0 -->
 
 ```{r}
 # parametros estimados junto a p_value q evalua 
 # Ho) parametro = 0
-tidy(modelo_1)
+tidy(modelo_1) |> 
+  select(term, estimate, std.error, p.value)
 ```
+
+Según los resultados de la tabla, se concluye que ambos parámetros del modelo 1, $\theta_1$ y $\Theta_1$ son no nulos, al 5 % de nivel de signficación y en base a la evidencia muestral. 
+
 
 <!-- Supuesto 5: parametros no redundantes -->
 
@@ -482,16 +506,18 @@ tidy(modelo_1)
 fit_1 <- modelo_1$m1[[1]]$fit$model   # objeto Arima 
 cov2cor(fit_1$var.coef)
 ```
-
+Según la matriz de correlaciones, se estima que $\hat{corr}(\theta_1, \Theta_1) = -0.0116$ lo cual permitiría concluir que los parámetros del modelo 1 no son redundantes porque están prácticamente incorrelados.
 
 
 <!-- Supuesto 6: modelo admisible -->
 
 ```{r}
-coef(modelo_1)
+coef(modelo_1) |> 
+  select(.model, term, estimate, std.error)
 ```
 
-los dos parametros son menores a 1 en modulo, ents invertible en las dos partes el modelo. ok
+Acorde a la tabla se observa que la estimación para el parámetro del modelo 1, $\theta_1$, es menor a uno en valor absoluto, lo cual conlleva a concluir que el modelo 1 es invertible en la parte regular. Análogamente ocurre con el parámetro $\Theta_1$, permitiendo concluir que el modelo 1 también es invertible en la parte estacional. Por estas razones el modelo 1 es admisible.
+
 
 
 ### Modelo 2
@@ -531,6 +557,8 @@ modelo_2 |>  # augment() añade los residuos automáticamente
 <!-- Supuesto 2: residuos son RB -->
 
 ```{r}
+#| fig-width: 8
+
 # ACF de residuos modelo 2
 acf_modelo_2 <- modelo_2 |> 
   augment() |> 
@@ -653,6 +681,8 @@ modelo_a |>  # augment() añade los residuos automáticamente
 <!-- Supuesto 2: residuos son RB -->
 
 ```{r}
+#| fig-width: 8
+
 # ACF de residuos modelo a
 acf_modelo_a <- modelo_a |> 
   augment() |> 
