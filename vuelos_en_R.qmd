@@ -42,6 +42,9 @@ library(dplyr)
 library(tidyverse)
 library(ggplot2)
 library(feasts)
+library(fable)     # para trabajar con objetos tsibble
+library(patchwork) # presentar graficos uno al lado del otro
+library(broom)     # IC de los parametros
 ```
 
 
@@ -104,7 +107,7 @@ map_dfr(c(6, 12, 18, 24), \(l) {
 Con un nivel de significación del 5% y en base a la evidencia muestral, se rechaza la hipótesis nula de ausencia de autocorrelación, para los cuatro rezagos considerados ($p-value < 0.001$). Consecuentemente, la serie presenta dependencia temporal y no puede modelarse como ruido blanco. Esto justifica continuar con el análisis de su estructura temporal.
 
 
-## Grafico de la serie
+## Evolución del número de vuelos
 
 ```{r}
 d_train |> 
@@ -124,9 +127,9 @@ En el segundo semestre del 2009, hay un mes en el que se observa un bajo número
 
 
 
-## Patrones de las series 
+## Estacionalidad
 
-### Estacionalidad
+### Comportamiento anual del número de vuelos
 
 
 ```{r}
@@ -150,7 +153,7 @@ El 2004 parece presentar valores más bajos que el resto de los años, puede deb
 
 
 
-### Gráfico de subseries
+### Comportamiento mensual del número de vuelos
 
 ```{r}
 d_train |> 
@@ -330,7 +333,427 @@ d_train |>
 En la FACM de la serie con ambas diferencias, en la parte estacional sólo se observa un bastón significativo que corresponde al rezago 12 y en la parte regular se observan tres significativos. De esto de desprende que estos dos recursos conducen a la estacionariedad tanto en la parte regular como en la estacional.
 
 
+# Especificación del modelo
 
 
 
+
+Para la parte estacional ma1 porq solo sobrevivio un baston, el del 12 en acf dif dif
+
+
+
+## Postulación de posibles modelos
+
+Se tienen en cuenta las características observadas en el análisis descriptivo, como la presencia de estacionalidad, a la hora de postular modelos que permitan cumplir con el objetivo del análisis. 
+
+En la FACM de las diferencias, se observa que sólo el coeficiente del rezago 12 es significativo. Por este motivo se emplea una estructura $MA(1)$ para la parte estacional. 
+
+En la parte regular hay tres bastones significativos, asociados a los rezagos uno, cuatro y siete. Sin embargo, los últimos dos presentan magnitudes bajas en comparación con el primero. Esto conduce a dos alternativas. La primera es ajustar una estructura $MA(1)$. La segunda alternativa es ajustar un modelo $ARMA(1,1)$ porque teniendo en cuenta los tres bastones significativos de la FACM y que sólo el primero de la FACPM es significativo, también podría estar sugiriendo un proceso autorregresivo. Es decir que los modelos a ajustar son:
+
+-   Modelo 1: $SARIMA(0,1,1)(0,1,1)_{12}$
+-   Modelo 2: $SARIMA(1,1,1)(0,1,1)_{12}$
+
+Además de estos dos últimos, se ajustará el modelo sugerido por el proceso automático implementado en la función `ARIMA()`.
+
+
+```{r}
+modelo_a <- d_train |> 
+  model(arima_fit = ARIMA(Int_Flt))
+
+report(modelo_a)
+```
+
+Este último es el modelo $SARIMA(1,0,3)(0,1,1)_{12}$ que es denominado Modelo A.
+
+
+
+
+## Diagnosis de los modelos
+
+Una vez propuestos los modelos, se analiza cuáles cumplen los supuestos.
+
+
+
+### Modelo 1
+
+Viene dado por:
+
+$$(1-B)(1-B^{12})z_t =(1 - \theta_1B)(1 - \Theta_1B^{12}) a_t$$
+
+
+
+```{r}
+# ajuste del modelo
+modelo_1 <- d_train |> 
+  model(m1 = ARIMA(Int_Flt ~ pdq(0,1,1) + PDQ(0,1,1, period = 12)))
+```
+
+
+
+
+<!-- Supuesto 1: residuos media 0 y var cte -->
+
+
+```{r}
+# grafico de residuos vs t: a_t^ vs t
+
+modelo_1 |>  # augment() añade los residuos automáticamente
+  augment() |> 
+  ggplot(aes(x = Fecha, y = .innov)) +  # .innov son los residuos del modelo
+  geom_line(color = "black", linewidth = 0.7) +
+  scale_x_yearmonth(date_breaks = "1 year", date_labels = "%Y") +
+  labs(x = "Tiempo", y = "Residuos del modelo 1") +
+  theme_bw()
+```
+
+
+<!-- Supuesto 2: residuos son RB -->
+
+```{r}
+# ACF de residuos modelo 1
+acf_modelo_1 <- modelo_1 |> 
+  augment() |> 
+  ACF(.innov, lag_max = 60) |> 
+  autoplot() +
+  labs(x = "Retardo", y = "FACM", title = NULL) + 
+  theme_bw()
+
+# PACF de residuos modelo 1
+pacf_modelo_1 <- modelo_1 |> 
+  augment() |> 
+  PACF(.innov, lag_max = 60) |> 
+  autoplot() +
+  labs(x = "Retardo", y = "FACM", title = NULL) + 
+  theme_bw()
+
+acf_modelo_1 + pacf_modelo_1
+```
+
+```{r}
+# ljung-box para residuos modelo 1
+# Ho) p1 = ... = p20 = 0 , p=0.27 --> residuos = RB
+
+modelo_1 |> 
+  augment() |> 
+  features(.innov, ljung_box, lag = 20, dof = 2) # dof = degrees of freedom = # parametros^
+```
+
+
+
+<!-- Supuesto 3: residuos normales -->
+
+```{r}
+## QQplot residuos modelo 1
+modelo_1 |> 
+  augment() |> 
+  ggplot(aes(sample = .innov)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(y = "Cuantiles teóricos", x = "Cuantiles observados") +
+  theme_bw()
+```
+
+```{r}
+# test normalidad sobre residuos modelo 1
+# Ho) residuos tienen distribucion normal
+
+residuos_modelo_1 <- modelo_1 |> 
+  augment() |> 
+  pull(.innov)  # o .resid
+
+shapiro_modelo_1 <- shapiro.test(residuos_modelo_1)
+pv_shapiro_modelo_1 <- shapiro_modelo_1$p.value
+
+
+shapiro_modelo_1
+```
+
+<!-- Supuesto 4: parametros no redundantes -->
+
+```{r}
+# parametros estimados junto a p_value q evalua 
+# Ho) parametro = 0
+tidy(modelo_1)
+```
+
+<!-- Supuesto 5: parametros no redundantes -->
+
+```{r}
+fit_1 <- modelo_1$m1[[1]]$fit$model   # objeto Arima 
+cov2cor(fit_1$var.coef)
+```
+
+
+
+<!-- Supuesto 6: modelo admisible -->
+
+```{r}
+coef(modelo_1)
+```
+
+los dos parametros son menores a 1 en modulo, ents invertible en las dos partes el modelo. ok
+
+
+### Modelo 2
+
+
+Viene dado por:
+
+$$(1-\phi_1B)(1-B)(1-B^{12})z_t =(1 - \theta_1B)(1 - \Theta_1B^{12}) a_t$$
+
+
+
+```{r}
+# ajuste del modelo
+modelo_2 <- d_train |> 
+  model(m2 = ARIMA(Int_Flt ~ pdq(1,1,1) + PDQ(0,1,1, period = 12)))
+```
+
+
+
+
+<!-- Supuesto 1: residuos media 0 y var cte -->
+
+
+```{r}
+# grafico de residuos vs t: a_t^ vs t
+
+modelo_2 |>  # augment() añade los residuos automáticamente
+  augment() |> 
+  ggplot(aes(x = Fecha, y = .innov)) +  # .innov son los residuos del modelo
+  geom_line(color = "black", linewidth = 0.7) +
+  scale_x_yearmonth(date_breaks = "1 year", date_labels = "%Y") +
+  labs(x = "Tiempo", y = "Residuos del modelo 2") +
+  theme_bw()
+```
+
+
+<!-- Supuesto 2: residuos son RB -->
+
+```{r}
+# ACF de residuos modelo 2
+acf_modelo_2 <- modelo_2 |> 
+  augment() |> 
+  ACF(.innov, lag_max = 60) |> 
+  autoplot() +
+  labs(x = "Retardo", y = "FACM", title = NULL) + 
+  theme_bw()
+
+# PACF de residuos modelo 2
+pacf_modelo_2 <- modelo_2 |> 
+  augment() |> 
+  PACF(.innov, lag_max = 60) |> 
+  autoplot() +
+  labs(x = "Retardo", y = "FACM", title = NULL) + 
+  theme_bw()
+
+acf_modelo_2 + pacf_modelo_2
+```
+
+```{r}
+# ljung-box para residuos modelo 2
+# Ho) p1 = ... = p20 = 0 , p=0.27 --> residuos = RB
+
+modelo_2 |> 
+  augment() |> 
+  features(.innov, ljung_box, lag = 20, dof = 3) # dof = degrees of freedom = # parametros^
+```
+
+
+
+<!-- Supuesto 3: residuos normales -->
+
+```{r}
+## QQplot residuos modelo 2
+modelo_2 |> 
+  augment() |> 
+  ggplot(aes(sample = .innov)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(y = "Cuantiles teóricos", x = "Cuantiles observados") +
+  theme_bw()
+```
+
+```{r}
+# test normalidad sobre residuos modelo 1
+# Ho) residuos tienen distribucion normal
+
+residuos_modelo_2 <- modelo_2 |> 
+  augment() |> 
+  pull(.innov)  # o .resid
+
+shapiro_modelo_2 <- shapiro.test(residuos_modelo_2)
+pv_shapiro_modelo_2 <- shapiro_modelo_2$p.value
+
+
+shapiro_modelo_2
+```
+
+<!-- Supuesto 4: parametros no redundantes -->
+
+```{r}
+# parametros estimados junto a p_value q evalua 
+# Ho) parametro = 0
+tidy(modelo_2)
+```
+
+<!-- Supuesto 5: parametros no redundantes -->
+
+```{r}
+fit_2 <- modelo_2$m2[[1]]$fit$model   # objeto Arima 
+cov2cor(fit_2$var.coef)
+```
+
+
+
+<!-- Supuesto 6: modelo admisible -->
+
+```{r}
+coef(modelo_2)
+```
+
+los tres parametros son menores a 1 en modulo, ents invertible en las dos partes el modelo. estacionario en parte reg. ok
+
+
+
+### Modelo A
+
+
+Viene dado por:
+
+$$(1-\phi_1B)(1-B^{12})z_t =(1 - \theta_1B - \theta_2B^2 - \theta_3B^3)(1 - \Theta_1B^{12}) a_t$$
+
+
+
+```{r}
+# ajuste del modelo
+modelo_a <- d_train |> 
+  model(ma = ARIMA(Int_Flt ~ pdq(1,0,3) + PDQ(0,1,1, period = 12)))
+```
+
+
+
+
+<!-- Supuesto 1: residuos media 0 y var cte -->
+
+
+```{r}
+# grafico de residuos vs t: a_t^ vs t
+
+modelo_a |>  # augment() añade los residuos automáticamente
+  augment() |> 
+  ggplot(aes(x = Fecha, y = .innov)) +  # .innov son los residuos del modelo
+  geom_line(color = "black", linewidth = 0.7) +
+  scale_x_yearmonth(date_breaks = "1 year", date_labels = "%Y") +
+  labs(x = "Tiempo", y = "Residuos del modelo A") +
+  theme_bw()
+```
+
+
+<!-- Supuesto 2: residuos son RB -->
+
+```{r}
+# ACF de residuos modelo a
+acf_modelo_a <- modelo_a |> 
+  augment() |> 
+  ACF(.innov, lag_max = 60) |> 
+  autoplot() +
+  labs(x = "Retardo", y = "FACM", title = NULL) + 
+  theme_bw()
+
+# PACF de residuos modelo 2
+pacf_modelo_a <- modelo_a |> 
+  augment() |> 
+  PACF(.innov, lag_max = 60) |> 
+  autoplot() +
+  labs(x = "Retardo", y = "FACM", title = NULL) + 
+  theme_bw()
+
+acf_modelo_a + pacf_modelo_a
+```
+
+```{r}
+# ljung-box para residuos modelo 3
+# Ho) p1 = ... = p20 = 0 , p=0.27 --> residuos = RB
+
+modelo_a |> 
+  augment() |> 
+  features(.innov, ljung_box, lag = 20, dof = 5) # dof = degrees of freedom = # parametros^
+```
+
+
+
+<!-- Supuesto 3: residuos normales -->
+
+```{r}
+## QQplot residuos modelo 2
+modelo_a |> 
+  augment() |> 
+  ggplot(aes(sample = .innov)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(y = "Cuantiles teóricos", x = "Cuantiles observados") +
+  theme_bw()
+```
+
+```{r}
+# test normalidad sobre residuos modelo 1
+# Ho) residuos tienen distribucion normal
+
+residuos_modelo_a <- modelo_a |> 
+  augment() |> 
+  pull(.innov)  # o .resid
+
+shapiro_modelo_a <- shapiro.test(residuos_modelo_a)
+pv_shapiro_modelo_a <- shapiro_modelo_a$p.value
+
+
+shapiro_modelo_a
+```
+
+<!-- Supuesto 4: parametros no redundantes -->
+
+```{r}
+# parametros estimados junto a p_value q evalua 
+# Ho) parametro = 0
+tidy(modelo_a)
+```
+
+<!-- Supuesto 5: parametros no redundantes -->
+
+```{r}
+fit_a <- modelo_a$ma[[1]]$fit$model   # objeto Arima 
+cov2cor(fit_a$var.coef)
+```
+
+
+
+<!-- Supuesto 6: modelo admisible. como lo miro si tengo un ma3 en parte reg? como veo si es invertible en parter reg? -->
+
+
+
+
+
+### Resumen
+
+por lo tanto continuo con tales modelos...
+
+TABLA
+
+## Comparación modelos admisibles
+
+comparo los modelos segun como ajustan y como predicen para terminar de elegir uno
+
+### Bondad de ajuste
+
+### Capacidad predictiva
+
+
+
+segun la bondad de ajuste y la capacidad predictiva, me quedo con el modelo x.
+
+
+# Pronósticos
+
+realizo las predicciones con el modelo x
 
