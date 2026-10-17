@@ -3307,7 +3307,9 @@ window.Quarto = {
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(feasts)</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(fable)     <span class="co"># para trabajar con objetos tsibble</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork) <span class="co"># presentar graficos uno al lado del otro</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(broom)     <span class="co"># IC de los parametros</span></span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(broom)     <span class="co"># IC de los parametros</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">scipen =</span> <span class="dv">999</span>)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Carga de datos</span></span>
@@ -3706,7 +3708,7 @@ AIC=1763.92   AICc=1764.8   BIC=1779.73</code></pre>
 </div>
 </div>
 </div>
-<p>La inspección visual del gráfico de los residuos sugiere que los residuos del modelo 1 tendrían media cero y variancia constante.</p>
+<p>La inspección visual del gráfico sugiere que los residuos del modelo 1 tendrían media cero y variancia constante.</p>
 <!-- Supuesto 2: residuos son RB -->
 <div class="cell">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ACF de residuos modelo 1</span></span>
@@ -3749,10 +3751,10 @@ AIC=1763.92   AICc=1764.8   BIC=1779.73</code></pre>
 <pre><code>[1] 0.2718211</code></pre>
 </div>
 </div>
-<p>Por este motivo, se utiliza un recurso que evalúe a todos los primeros coeficientes de la FAC de manera conjunta. Se realiza el test de Ljung-Box y se concluye en base a la evidencia muestral que los primeros 20 coeficientes de los residuos del modelo son nulos conjuntamente, es decir, los residuos del modelo 1 son ruido blanco a un 5% de significación (<span class="math inline">\(p-value=\)</span> 0.2718211).</p>
+<p>Por este motivo, se utiliza un recurso que evalúe a todos los primeros coeficientes de la FAC de manera conjunta. Se realiza el test de Ljung-Box y se concluye en base a la evidencia muestral que los primeros 20 coeficientes de los residuos del modelo son nulos conjuntamente, es decir, los residuos del modelo 1 son ruido blanco a un 5% de significación (<span class="math inline">\(p-value=\)</span> 0.2718211). Se cumple el supuesto de residuos incorrelados.</p>
 <!-- Supuesto 3: residuos normales -->
 <div class="cell">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="do">## QQplot residuos modelo 1</span></span>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># QQplot residuos modelo 1</span></span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>modelo_1 <span class="sc">|&gt;</span> </span>
 <span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">augment</span>() <span class="sc">|&gt;</span> </span>
 <span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">sample =</span> .innov)) <span class="sc">+</span></span>
@@ -3791,7 +3793,7 @@ W = 0.96385, p-value = 0.0034</code></pre>
 </div>
 </div>
 <p>Se realiza la prueba de Shapiro-Wilk y se concluye en base a la evidencia muestral que los residuos del modelo 1 no siguen una distribución normal a un 5% de significación (<span class="math inline">\(p-value=\)</span> 0.0034003).</p>
-<!-- Supuesto 4: todos los parametros != 0 -->
+<!-- Supuesto 4: parsimonia -->
 <div class="cell">
 <div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># parametros estimados junto a p_value q evalua </span></span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Ho) parametro = 0</span></span>
@@ -3805,7 +3807,7 @@ W = 0.96385, p-value = 0.0034</code></pre>
 2 sma1    -0.706    0.116  0.0000000218</code></pre>
 </div>
 </div>
-<p>Según los resultados de la tabla, se concluye que ambos parámetros del modelo 1, <span class="math inline">\(\theta_1\)</span> y <span class="math inline">\(\Theta_1\)</span> son no nulos, al 5 % de nivel de signficación y en base a la evidencia muestral.</p>
+<p>Según los resultados de la tabla, se concluye que ambos parámetros del modelo 1, <span class="math inline">\(\theta_1\)</span> y <span class="math inline">\(\Theta_1\)</span> son no nulos, al 5 % de nivel de significación y en base a la evidencia muestral. En otras palabras, el modelo 1 cumple el supuesto de parsimonia.</p>
 <!-- Supuesto 5: parametros no redundantes -->
 <div class="cell">
 <div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>fit_1 <span class="ot">&lt;-</span> modelo_1<span class="sc">$</span>m1[[<span class="dv">1</span>]]<span class="sc">$</span>fit<span class="sc">$</span>model   <span class="co"># objeto Arima </span></span>
@@ -3829,7 +3831,7 @@ sma1 -0.0116207  1.0000000</code></pre>
 2 m1     sma1    -0.706    0.116 </code></pre>
 </div>
 </div>
-<p>Acorde a la tabla se observa que la estimación para el parámetro del modelo 1 <span class="math inline">\(\theta_1\)</span> es menor a uno en valor absoluto, lo cual conlleva a concluir que el modelo 1 es invertible en la parte regular. Análogamente ocurre con el parámetro <span class="math inline">\(\Theta_1\)</span>, permitiendo concluir que el modelo 1 también es invertible en la parte estacional. Por estas razones el modelo 1 es admisible.</p>
+<p>Acorde a la tabla se observa que la estimación para el parámetro del modelo 1, <span class="math inline">\(\theta_1\)</span>, es menor a uno en valor absoluto, lo cual conlleva a concluir que el modelo 1 es invertible en la parte regular. Análogamente ocurre con el parámetro <span class="math inline">\(\Theta_1\)</span>, permitiendo concluir que el modelo 1 también es invertible en la parte estacional. Por estas razones el modelo 1 es admisible.</p>
 </section>
 <section id="modelo-2" class="level3" data-number="4.2.2">
 <h3 data-number="4.2.2" class="anchored" data-anchor-id="modelo-2"><span class="header-section-number">4.2.2</span> Modelo 2</h3>
@@ -3844,9 +3846,9 @@ sma1 -0.0116207  1.0000000</code></pre>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># grafico de residuos vs t: a_t^ vs t</span></span>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>modelo_2 <span class="sc">|&gt;</span>  <span class="co"># augment() añade los residuos automáticamente</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>modelo_2 <span class="sc">|&gt;</span> </span>
 <span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">augment</span>() <span class="sc">|&gt;</span> </span>
-<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> Fecha, <span class="at">y =</span> .innov)) <span class="sc">+</span>  <span class="co"># .innov son los residuos del modelo</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> Fecha, <span class="at">y =</span> .innov)) <span class="sc">+</span>  </span>
 <span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">&quot;black&quot;</span>, <span class="at">linewidth =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
 <span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_yearmonth</span>(<span class="at">date_breaks =</span> <span class="st">&quot;1 year&quot;</span>, <span class="at">date_labels =</span> <span class="st">&quot;%Y&quot;</span>) <span class="sc">+</span></span>
 <span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;Tiempo&quot;</span>, <span class="at">y =</span> <span class="st">&quot;Residuos del modelo 2&quot;</span>) <span class="sc">+</span></span>
@@ -3859,6 +3861,7 @@ sma1 -0.0116207  1.0000000</code></pre>
 </div>
 </div>
 </div>
+<p>La inspección visual del gráfico sugiere que los residuos del modelo 2 tendrían media cero y variancia constante.</p>
 <!-- Supuesto 2: residuos son RB -->
 <div class="cell">
 <div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ACF de residuos modelo 2</span></span>
@@ -3886,23 +3889,25 @@ sma1 -0.0116207  1.0000000</code></pre>
 </div>
 </div>
 </div>
+<p>Casi todos los coeficientes de la FACM y FACPM son, de manera individual, significativamente distintos de cero. Sin embargo, el hecho de que algunos sí son significativos no conduce a conclusiones claras sobre la estructura de correlación de los residuos.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ljung-box para residuos modelo 2</span></span>
-<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Ho) p1 = ... = p20 = 0 , p=0.27 --&gt; residuos = RB</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Ho) p1 = ... = p20 = 0 , p=0.25 --&gt; residuos = RB</span></span>
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>modelo_2 <span class="sc">|&gt;</span> </span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>pv_ljung_modelo_2 <span class="ot">&lt;-</span> modelo_2 <span class="sc">|&gt;</span> </span>
 <span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">augment</span>() <span class="sc">|&gt;</span> </span>
-<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">features</span>(.innov, ljung_box, <span class="at">lag =</span> <span class="dv">20</span>, <span class="at">dof =</span> <span class="dv">3</span>) <span class="co"># dof = degrees of freedom = # parametros^</span></span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">features</span>(.innov, ljung_box, <span class="at">lag =</span> <span class="dv">20</span>, <span class="at">dof =</span> <span class="dv">3</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(lb_pvalue)</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>pv_ljung_modelo_2</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 1 × 3
-  .model lb_stat lb_pvalue
-  &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;
-1 m2        20.3     0.257</code></pre>
+<pre><code>[1] 0.2574427</code></pre>
 </div>
 </div>
+<p>Por este motivo, se utiliza un recurso que evalúe a todos los primeros coeficientes de la FAC de manera conjunta. Se realiza el test de Ljung-Box y se concluye en base a la evidencia muestral que los primeros 20 coeficientes de los residuos del modelo son nulos conjuntamente, es decir, los residuos del modelo 2 son ruido blanco a un 5% de significación (<span class="math inline">\(p-value=\)</span> 0.2574427). Se cumple el supuesto de residuos incorrelados.</p>
 <!-- Supuesto 3: residuos normales -->
 <div class="cell">
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="do">## QQplot residuos modelo 2</span></span>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># QQplot residuos modelo 2</span></span>
 <span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>modelo_2 <span class="sc">|&gt;</span> </span>
 <span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">augment</span>() <span class="sc">|&gt;</span> </span>
 <span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">sample =</span> .innov)) <span class="sc">+</span></span>
@@ -3918,13 +3923,14 @@ sma1 -0.0116207  1.0000000</code></pre>
 </div>
 </div>
 </div>
+<p>A partir de la visualización del gráfico cuantil-cuantil, los puntos no parecen ubicarse sobre una línea lo cual podría estar sugiriendo que los residuos no siguen una distribución normal.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># test normalidad sobre residuos modelo 1</span></span>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># test normalidad sobre residuos modelo 2</span></span>
 <span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Ho) residuos tienen distribucion normal</span></span>
 <span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>residuos_modelo_2 <span class="ot">&lt;-</span> modelo_2 <span class="sc">|&gt;</span> </span>
 <span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">augment</span>() <span class="sc">|&gt;</span> </span>
-<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(.innov)  <span class="co"># o .resid</span></span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(.innov) </span>
 <span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>shapiro_modelo_2 <span class="ot">&lt;-</span> <span class="fu">shapiro.test</span>(residuos_modelo_2)</span>
 <span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>pv_shapiro_modelo_2 <span class="ot">&lt;-</span> shapiro_modelo_2<span class="sc">$</span>p.value</span>
@@ -3939,23 +3945,26 @@ data:  residuos_modelo_2
 W = 0.96513, p-value = 0.004326</code></pre>
 </div>
 </div>
-<!-- Supuesto 4: parametros no redundantes -->
+<p>Se realiza la prueba de Shapiro-Wilk y se concluye en base a la evidencia muestral que los residuos del modelo 2 no siguen una distribución normal a un 5% de significación (<span class="math inline">\(p-value=\)</span> 0.004326).</p>
+<!-- Supuesto 4: parsimonia -->
 <div class="cell">
 <div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># parametros estimados junto a p_value q evalua </span></span>
 <span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Ho) parametro = 0</span></span>
-<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(modelo_2)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(modelo_2) <span class="sc">|&gt;</span> </span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(term, estimate, std.error, p.value)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 3 × 6
-  .model term  estimate std.error statistic      p.value
-  &lt;chr&gt;  &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;
-1 m2     ar1     -0.255     0.175     -1.45 0.150       
-2 m2     ma1     -0.201     0.160     -1.26 0.211       
-3 m2     sma1    -0.702     0.116     -6.05 0.0000000242</code></pre>
+<pre><code># A tibble: 3 × 4
+  term  estimate std.error      p.value
+  &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;
+1 ar1     -0.255     0.175 0.150       
+2 ma1     -0.201     0.160 0.211       
+3 sma1    -0.702     0.116 0.0000000242</code></pre>
 </div>
 </div>
+<p>Según los resultados de la tabla y en base a la evidencia muestral, se concluye que de los tres parámetros del modelo 2, sólo <span class="math inline">\(\Theta_1\)</span> es no nulo, al 5% de nivel de significación. En otras palabras, el modelo 2 no cumple el supuesto de parsimonia.</p>
 <!-- Supuesto 5: parametros no redundantes -->
 <div class="cell">
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>fit_2 <span class="ot">&lt;-</span> modelo_2<span class="sc">$</span>m2[[<span class="dv">1</span>]]<span class="sc">$</span>fit<span class="sc">$</span>model   <span class="co"># objeto Arima </span></span>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>fit_2 <span class="ot">&lt;-</span> modelo_2<span class="sc">$</span>m2[[<span class="dv">1</span>]]<span class="sc">$</span>fit<span class="sc">$</span>model   </span>
 <span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cov2cor</span>(fit_2<span class="sc">$</span>var.coef)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>             ar1         ma1        sma1
@@ -3964,19 +3973,21 @@ ma1  -0.83205835  1.00000000  0.03319411
 sma1 -0.03927747  0.03319411  1.00000000</code></pre>
 </div>
 </div>
+<p>Según la matriz, el modelos 2 no verificaría el supuesto de ausencia de parámetros no redundantes debido a que <span class="math inline">\(\theta_1\)</span> y <span class="math inline">\(\phi_1\)</span> presentan una correlación entimada mayor a 0.8 en valor absoluto.</p>
 <!-- Supuesto 6: modelo admisible -->
 <div class="cell">
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">coef</span>(modelo_2)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">coef</span>(modelo_2)<span class="sc">|&gt;</span> </span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(.model, term, estimate, std.error)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 3 × 6
-  .model term  estimate std.error statistic      p.value
-  &lt;chr&gt;  &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;
-1 m2     ar1     -0.255     0.175     -1.45 0.150       
-2 m2     ma1     -0.201     0.160     -1.26 0.211       
-3 m2     sma1    -0.702     0.116     -6.05 0.0000000242</code></pre>
+<pre><code># A tibble: 3 × 4
+  .model term  estimate std.error
+  &lt;chr&gt;  &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+1 m2     ar1     -0.255     0.175
+2 m2     ma1     -0.201     0.160
+3 m2     sma1    -0.702     0.116</code></pre>
 </div>
 </div>
-<p>los tres parametros son menores a 1 en modulo, ents invertible en las dos partes el modelo. estacionario en parte reg. ok</p>
+<p>Acorde a la tabla, la estimación de cada uno de los tres parámetros es menor a uno en valor absoluto. Esto significa que este modelo es estacionario en la parte regular e invertrible en ambas partes, es decir, el modelo 2 es admisible.</p>
 </section>
 <section id="modelo-a" class="level3" data-number="4.2.3">
 <h3 data-number="4.2.3" class="anchored" data-anchor-id="modelo-a"><span class="header-section-number">4.2.3</span> Modelo A</h3>
@@ -3991,9 +4002,9 @@ sma1 -0.03927747  0.03319411  1.00000000</code></pre>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># grafico de residuos vs t: a_t^ vs t</span></span>
 <span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>modelo_a <span class="sc">|&gt;</span>  <span class="co"># augment() añade los residuos automáticamente</span></span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>modelo_a <span class="sc">|&gt;</span>  </span>
 <span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">augment</span>() <span class="sc">|&gt;</span> </span>
-<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> Fecha, <span class="at">y =</span> .innov)) <span class="sc">+</span>  <span class="co"># .innov son los residuos del modelo</span></span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> Fecha, <span class="at">y =</span> .innov)) <span class="sc">+</span>  </span>
 <span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">&quot;black&quot;</span>, <span class="at">linewidth =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
 <span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_yearmonth</span>(<span class="at">date_breaks =</span> <span class="st">&quot;1 year&quot;</span>, <span class="at">date_labels =</span> <span class="st">&quot;%Y&quot;</span>) <span class="sc">+</span></span>
 <span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;Tiempo&quot;</span>, <span class="at">y =</span> <span class="st">&quot;Residuos del modelo A&quot;</span>) <span class="sc">+</span></span>
@@ -4006,6 +4017,7 @@ sma1 -0.03927747  0.03319411  1.00000000</code></pre>
 </div>
 </div>
 </div>
+<p>La inspección visual del gráfico sugiere que los residuos del modelo A tendrían media cero y variancia constante.</p>
 <!-- Supuesto 2: residuos son RB -->
 <div class="cell">
 <div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ACF de residuos modelo a</span></span>
@@ -4016,7 +4028,7 @@ sma1 -0.03927747  0.03319411  1.00000000</code></pre>
 <span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;Retardo&quot;</span>, <span class="at">y =</span> <span class="st">&quot;FACM&quot;</span>, <span class="at">title =</span> <span class="cn">NULL</span>) <span class="sc">+</span> </span>
 <span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>()</span>
 <span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a><span class="co"># PACF de residuos modelo 2</span></span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a><span class="co"># PACF de residuos modelo a</span></span>
 <span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a>pacf_modelo_a <span class="ot">&lt;-</span> modelo_a <span class="sc">|&gt;</span> </span>
 <span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">augment</span>() <span class="sc">|&gt;</span> </span>
 <span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">PACF</span>(.innov, <span class="at">lag_max =</span> <span class="dv">60</span>) <span class="sc">|&gt;</span> </span>
@@ -4033,23 +4045,25 @@ sma1 -0.03927747  0.03319411  1.00000000</code></pre>
 </div>
 </div>
 </div>
+<p>Casi todos los coeficientes de la FACM y FACPM son, de manera individual, significativamente distintos de cero. Sin embargo, el hecho de que algunos sí son significativos no conduce a conclusiones claras sobre la estructura de correlación de los residuos.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ljung-box para residuos modelo 3</span></span>
-<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Ho) p1 = ... = p20 = 0 , p=0.27 --&gt; residuos = RB</span></span>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ljung-box para residuos modelo a</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Ho) p1 = ... = p20 = 0 , p=0.61 --&gt; residuos = RB</span></span>
 <span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>modelo_a <span class="sc">|&gt;</span> </span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>pv_ljung_modelo_a <span class="ot">&lt;-</span> modelo_a <span class="sc">|&gt;</span> </span>
 <span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">augment</span>() <span class="sc">|&gt;</span> </span>
-<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">features</span>(.innov, ljung_box, <span class="at">lag =</span> <span class="dv">20</span>, <span class="at">dof =</span> <span class="dv">5</span>) <span class="co"># dof = degrees of freedom = # parametros^</span></span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">features</span>(.innov, ljung_box, <span class="at">lag =</span> <span class="dv">20</span>, <span class="at">dof =</span> <span class="dv">5</span>) <span class="sc">|&gt;</span>  </span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(lb_pvalue)</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>pv_ljung_modelo_a</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 1 × 3
-  .model lb_stat lb_pvalue
-  &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;
-1 ma        13.0     0.606</code></pre>
+<pre><code>[1] 0.6057825</code></pre>
 </div>
 </div>
+<p>Por este motivo, se utiliza un recurso que evalúe a todos los primeros coeficientes de la FAC de manera conjunta. Se realiza el test de Ljung-Box y se concluye en base a la evidencia muestral que los primeros 20 coeficientes de los residuos del modelo son nulos conjuntamente, es decir, los residuos del modelo A son ruido blanco a un 5% de significación (<span class="math inline">\(p-value=\)</span> 0.6057825). Se cumple el supuesto de residuos incorrelados.</p>
 <!-- Supuesto 3: residuos normales -->
 <div class="cell">
-<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="do">## QQplot residuos modelo 2</span></span>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co"># QQplot residuos modelo a</span></span>
 <span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>modelo_a <span class="sc">|&gt;</span> </span>
 <span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">augment</span>() <span class="sc">|&gt;</span> </span>
 <span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">sample =</span> .innov)) <span class="sc">+</span></span>
@@ -4065,13 +4079,14 @@ sma1 -0.03927747  0.03319411  1.00000000</code></pre>
 </div>
 </div>
 </div>
+<p>A partir de la visualización del gráfico cuantil-cuantil, los puntos no parecen ubicarse sobre una línea lo cual podría estar sugiriendo que los residuos no siguen una distribución normal.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="co"># test normalidad sobre residuos modelo 1</span></span>
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="co"># test normalidad sobre residuos modelo a</span></span>
 <span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Ho) residuos tienen distribucion normal</span></span>
 <span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>residuos_modelo_a <span class="ot">&lt;-</span> modelo_a <span class="sc">|&gt;</span> </span>
 <span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">augment</span>() <span class="sc">|&gt;</span> </span>
-<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(.innov)  <span class="co"># o .resid</span></span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(.innov)  </span>
 <span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>shapiro_modelo_a <span class="ot">&lt;-</span> <span class="fu">shapiro.test</span>(residuos_modelo_a)</span>
 <span id="cb52-9"><a href="#cb52-9" aria-hidden="true" tabindex="-1"></a>pv_shapiro_modelo_a <span class="ot">&lt;-</span> shapiro_modelo_a<span class="sc">$</span>p.value</span>
@@ -4086,25 +4101,28 @@ data:  residuos_modelo_a
 W = 0.96378, p-value = 0.00336</code></pre>
 </div>
 </div>
-<!-- Supuesto 4: parametros no redundantes -->
+<p>Se realiza la prueba de Shapiro-Wilk y se concluye en base a la evidencia muestral que los residuos del modelo A no siguen una distribución normal a un 5% de significación (<span class="math inline">\(p-value=\)</span> 0.0033599).</p>
+<!-- Supuesto 4: parsimonia -->
 <div class="cell">
 <div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="co"># parametros estimados junto a p_value q evalua </span></span>
 <span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Ho) parametro = 0</span></span>
-<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(modelo_a)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(modelo_a) <span class="sc">|&gt;</span> </span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(term, estimate, std.error, p.value)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 5 × 6
-  .model term  estimate std.error statistic  p.value
-  &lt;chr&gt;  &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
-1 ma     ar1      0.977    0.0326    29.9   1.21e-52
-2 ma     ma1     -0.428    0.109     -3.93  1.52e- 4
-3 ma     ma2      0.115    0.123      0.932 3.54e- 1
-4 ma     ma3      0.211    0.125      1.68  9.54e- 2
-5 ma     sma1    -0.743    0.121     -6.14  1.59e- 8</code></pre>
+<pre><code># A tibble: 5 × 4
+  term  estimate std.error  p.value
+  &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+1 ar1      0.977    0.0326 1.21e-52
+2 ma1     -0.428    0.109  1.52e- 4
+3 ma2      0.115    0.123  3.54e- 1
+4 ma3      0.211    0.125  9.54e- 2
+5 sma1    -0.743    0.121  1.59e- 8</code></pre>
 </div>
 </div>
+<p>Según los resultados de la tabla y en base a la evidencia muestral, se concluye que de los cinco parámetros del modelo A, sólo los parámetros <span class="math inline">\(\phi_1\)</span>, <span class="math inline">\(\theta_1\)</span> y <span class="math inline">\(\Theta_1\)</span> son no nulos, al 5% de nivel de significación. En otras palabras, el modelo A no cumple el supuesto de parsimonia.</p>
 <!-- Supuesto 5: parametros no redundantes -->
 <div class="cell">
-<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>fit_a <span class="ot">&lt;-</span> modelo_a<span class="sc">$</span>ma[[<span class="dv">1</span>]]<span class="sc">$</span>fit<span class="sc">$</span>model   <span class="co"># objeto Arima </span></span>
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>fit_a <span class="ot">&lt;-</span> modelo_a<span class="sc">$</span>ma[[<span class="dv">1</span>]]<span class="sc">$</span>fit<span class="sc">$</span>model   </span>
 <span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cov2cor</span>(fit_a<span class="sc">$</span>var.coef)</span></code><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>            ar1         ma1         ma2        ma3        sma1
@@ -4115,7 +4133,8 @@ ma3  -0.2780806  0.50746291 -0.39623000  1.0000000 -0.10349536
 sma1 -0.3135677  0.02707684  0.06713203 -0.1034954  1.00000000</code></pre>
 </div>
 </div>
-<!-- Supuesto 6: modelo admisible. como lo miro si tengo un ma3 en parte reg? como veo si es invertible en parter reg? -->
+<p>Según la matriz, se observa que la mayoría de las correlaciones estimadas entre pares de parámetros son bajas a excepción de <span class="math inline">\(\hat{corr}(\theta_1, \theta_3) = 0.50746291\)</span> y <span class="math inline">\(\hat{corr}(\theta_1, \theta_2) = -0.47563231\)</span> las cuales son moderadas. Sin embargo, retomando el hecho de que los parámetros <span class="math inline">\(\theta_2\)</span> y <span class="math inline">\(\theta_3\)</span> no resultan significativos, se concluye que el modelo A verifica el supuesto de parámetros no redundantes.</p>
+<!-- Supuesto 6: modelo admisible. como lo miro si tengo un ma3 en parte reg? como veo si es invertible en parte reg? -->
 </section>
 <section id="resumen" class="level3" data-number="4.2.4">
 <h3 data-number="4.2.4" class="anchored" data-anchor-id="resumen"><span class="header-section-number">4.2.4</span> Resumen</h3>

@@ -45,6 +45,8 @@ library(feasts)
 library(fable)     # para trabajar con objetos tsibble
 library(patchwork) # presentar graficos uno al lado del otro
 library(broom)     # IC de los parametros
+
+options(scipen = 999)
 ```
 
 
@@ -408,7 +410,7 @@ modelo_1 |>  # augment() añade los residuos automáticamente
 
 
 
-La inspección visual del gráfico de los residuos sugiere que los residuos del modelo 1 tendrían media cero y variancia constante.
+La inspección visual del gráfico sugiere que los residuos del modelo 1 tendrían media cero y variancia constante.
 
 
 <!-- Supuesto 2: residuos son RB -->
@@ -451,13 +453,13 @@ pv_ljung_modelo_1
 ```
 
 
-Por este motivo, se utiliza un recurso que evalúe a todos los primeros coeficientes de la FAC de manera conjunta. Se realiza el test de Ljung-Box y se concluye en base a la evidencia muestral que los primeros 20 coeficientes de los residuos del modelo son nulos conjuntamente, es decir, los residuos del modelo 1 son ruido blanco a un 5% de significación ($p-value=$ `r pv_ljung_modelo_1`).
+Por este motivo, se utiliza un recurso que evalúe a todos los primeros coeficientes de la FAC de manera conjunta. Se realiza el test de Ljung-Box y se concluye en base a la evidencia muestral que los primeros 20 coeficientes de los residuos del modelo son nulos conjuntamente, es decir, los residuos del modelo 1 son ruido blanco a un 5% de significación ($p-value=$ `r pv_ljung_modelo_1`). Se cumple el supuesto de residuos incorrelados.
 
 
 <!-- Supuesto 3: residuos normales -->
 
 ```{r}
-## QQplot residuos modelo 1
+# QQplot residuos modelo 1
 modelo_1 |> 
   augment() |> 
   ggplot(aes(sample = .innov)) +
@@ -488,7 +490,7 @@ shapiro_modelo_1
 Se realiza la prueba de Shapiro-Wilk y se concluye en base a la evidencia muestral que los residuos del modelo 1 no siguen una distribución normal a un 5% de significación ($p-value=$ `r pv_shapiro_modelo_1`).
 
 
-<!-- Supuesto 4: todos los parametros != 0 -->
+<!-- Supuesto 4: parsimonia -->
 
 ```{r}
 # parametros estimados junto a p_value q evalua 
@@ -497,7 +499,7 @@ tidy(modelo_1) |>
   select(term, estimate, std.error, p.value)
 ```
 
-Según los resultados de la tabla, se concluye que ambos parámetros del modelo 1, $\theta_1$ y $\Theta_1$ son no nulos, al 5 % de nivel de signficación y en base a la evidencia muestral. 
+Según los resultados de la tabla, se concluye que ambos parámetros del modelo 1, $\theta_1$ y $\Theta_1$ son no nulos, al 5 % de nivel de significación y en base a la evidencia muestral. En otras palabras, el modelo 1 cumple el supuesto de parsimonia.
 
 
 <!-- Supuesto 5: parametros no redundantes -->
@@ -544,14 +546,17 @@ modelo_2 <- d_train |>
 ```{r}
 # grafico de residuos vs t: a_t^ vs t
 
-modelo_2 |>  # augment() añade los residuos automáticamente
+modelo_2 |> 
   augment() |> 
-  ggplot(aes(x = Fecha, y = .innov)) +  # .innov son los residuos del modelo
+  ggplot(aes(x = Fecha, y = .innov)) +  
   geom_line(color = "black", linewidth = 0.7) +
   scale_x_yearmonth(date_breaks = "1 year", date_labels = "%Y") +
   labs(x = "Tiempo", y = "Residuos del modelo 2") +
   theme_bw()
 ```
+
+
+La inspección visual del gráfico sugiere que los residuos del modelo 2 tendrían media cero y variancia constante.
 
 
 <!-- Supuesto 2: residuos son RB -->
@@ -578,21 +583,30 @@ pacf_modelo_2 <- modelo_2 |>
 acf_modelo_2 + pacf_modelo_2
 ```
 
+
+Casi todos los coeficientes de la FACM y FACPM son, de manera individual, significativamente distintos de cero. Sin embargo, el hecho de que algunos sí son significativos no conduce a conclusiones claras sobre la estructura de correlación de los residuos. 
+
+
 ```{r}
 # ljung-box para residuos modelo 2
-# Ho) p1 = ... = p20 = 0 , p=0.27 --> residuos = RB
+# Ho) p1 = ... = p20 = 0 , p=0.25 --> residuos = RB
 
-modelo_2 |> 
+pv_ljung_modelo_2 <- modelo_2 |> 
   augment() |> 
-  features(.innov, ljung_box, lag = 20, dof = 3) # dof = degrees of freedom = # parametros^
+  features(.innov, ljung_box, lag = 20, dof = 3) |> 
+  pull(lb_pvalue)
+
+pv_ljung_modelo_2
 ```
+
+Por este motivo, se utiliza un recurso que evalúe a todos los primeros coeficientes de la FAC de manera conjunta. Se realiza el test de Ljung-Box y se concluye en base a la evidencia muestral que los primeros 20 coeficientes de los residuos del modelo son nulos conjuntamente, es decir, los residuos del modelo 2 son ruido blanco a un 5% de significación ($p-value=$ `r pv_ljung_modelo_2`). Se cumple el supuesto de residuos incorrelados.
 
 
 
 <!-- Supuesto 3: residuos normales -->
 
 ```{r}
-## QQplot residuos modelo 2
+# QQplot residuos modelo 2
 modelo_2 |> 
   augment() |> 
   ggplot(aes(sample = .innov)) +
@@ -602,13 +616,17 @@ modelo_2 |>
   theme_bw()
 ```
 
+
+A partir de la visualización del gráfico cuantil-cuantil, los puntos no parecen ubicarse sobre una línea lo cual podría estar sugiriendo que los residuos no siguen una distribución normal.
+
+
 ```{r}
-# test normalidad sobre residuos modelo 1
+# test normalidad sobre residuos modelo 2
 # Ho) residuos tienen distribucion normal
 
 residuos_modelo_2 <- modelo_2 |> 
   augment() |> 
-  pull(.innov)  # o .resid
+  pull(.innov) 
 
 shapiro_modelo_2 <- shapiro.test(residuos_modelo_2)
 pv_shapiro_modelo_2 <- shapiro_modelo_2$p.value
@@ -617,30 +635,38 @@ pv_shapiro_modelo_2 <- shapiro_modelo_2$p.value
 shapiro_modelo_2
 ```
 
-<!-- Supuesto 4: parametros no redundantes -->
+Se realiza la prueba de Shapiro-Wilk y se concluye en base a la evidencia muestral que los residuos del modelo 2 no siguen una distribución normal a un 5% de significación ($p-value=$ `r pv_shapiro_modelo_2`).
+
+
+<!-- Supuesto 4: parsimonia -->
 
 ```{r}
 # parametros estimados junto a p_value q evalua 
 # Ho) parametro = 0
-tidy(modelo_2)
+tidy(modelo_2) |> 
+  select(term, estimate, std.error, p.value)
 ```
+
+Según los resultados de la tabla y en base a la evidencia muestral, se concluye que de los tres parámetros del modelo 2, sólo $\Theta_1$ es no nulo, al 5% de nivel de significación. En otras palabras, el modelo 2 no cumple el supuesto de parsimonia.
+
 
 <!-- Supuesto 5: parametros no redundantes -->
 
 ```{r}
-fit_2 <- modelo_2$m2[[1]]$fit$model   # objeto Arima 
+fit_2 <- modelo_2$m2[[1]]$fit$model   
 cov2cor(fit_2$var.coef)
 ```
-
+Según la matriz, el modelos 2 no verificaría el supuesto de ausencia de parámetros no redundantes debido a que $\theta_1$ y $\phi_1$ presentan una correlación entimada mayor a 0.8 en valor absoluto.
 
 
 <!-- Supuesto 6: modelo admisible -->
 
 ```{r}
-coef(modelo_2)
+coef(modelo_2)|> 
+  select(.model, term, estimate, std.error)
 ```
 
-los tres parametros son menores a 1 en modulo, ents invertible en las dos partes el modelo. estacionario en parte reg. ok
+Acorde a la tabla, la estimación de cada uno de los tres parámetros es menor a uno en valor absoluto. Esto significa que este modelo es estacionario en la parte regular e invertrible en ambas partes, es decir, el modelo 2 es admisible.
 
 
 
@@ -668,14 +694,17 @@ modelo_a <- d_train |>
 ```{r}
 # grafico de residuos vs t: a_t^ vs t
 
-modelo_a |>  # augment() añade los residuos automáticamente
+modelo_a |>  
   augment() |> 
-  ggplot(aes(x = Fecha, y = .innov)) +  # .innov son los residuos del modelo
+  ggplot(aes(x = Fecha, y = .innov)) +  
   geom_line(color = "black", linewidth = 0.7) +
   scale_x_yearmonth(date_breaks = "1 year", date_labels = "%Y") +
   labs(x = "Tiempo", y = "Residuos del modelo A") +
   theme_bw()
 ```
+
+La inspección visual del gráfico sugiere que los residuos del modelo A tendrían media cero y variancia constante.
+
 
 
 <!-- Supuesto 2: residuos son RB -->
@@ -691,7 +720,7 @@ acf_modelo_a <- modelo_a |>
   labs(x = "Retardo", y = "FACM", title = NULL) + 
   theme_bw()
 
-# PACF de residuos modelo 2
+# PACF de residuos modelo a
 pacf_modelo_a <- modelo_a |> 
   augment() |> 
   PACF(.innov, lag_max = 60) |> 
@@ -702,21 +731,31 @@ pacf_modelo_a <- modelo_a |>
 acf_modelo_a + pacf_modelo_a
 ```
 
-```{r}
-# ljung-box para residuos modelo 3
-# Ho) p1 = ... = p20 = 0 , p=0.27 --> residuos = RB
 
-modelo_a |> 
+Casi todos los coeficientes de la FACM y FACPM son, de manera individual, significativamente distintos de cero. Sin embargo, el hecho de que algunos sí son significativos no conduce a conclusiones claras sobre la estructura de correlación de los residuos. 
+
+
+
+```{r}
+# ljung-box para residuos modelo a
+# Ho) p1 = ... = p20 = 0 , p=0.61 --> residuos = RB
+
+pv_ljung_modelo_a <- modelo_a |> 
   augment() |> 
-  features(.innov, ljung_box, lag = 20, dof = 5) # dof = degrees of freedom = # parametros^
+  features(.innov, ljung_box, lag = 20, dof = 5) |>  
+  pull(lb_pvalue)
+
+pv_ljung_modelo_a
 ```
 
+
+Por este motivo, se utiliza un recurso que evalúe a todos los primeros coeficientes de la FAC de manera conjunta. Se realiza el test de Ljung-Box y se concluye en base a la evidencia muestral que los primeros 20 coeficientes de los residuos del modelo son nulos conjuntamente, es decir, los residuos del modelo A son ruido blanco a un 5% de significación ($p-value=$ `r pv_ljung_modelo_a`). Se cumple el supuesto de residuos incorrelados.
 
 
 <!-- Supuesto 3: residuos normales -->
 
 ```{r}
-## QQplot residuos modelo 2
+# QQplot residuos modelo a
 modelo_a |> 
   augment() |> 
   ggplot(aes(sample = .innov)) +
@@ -726,13 +765,18 @@ modelo_a |>
   theme_bw()
 ```
 
+
+A partir de la visualización del gráfico cuantil-cuantil, los puntos no parecen ubicarse sobre una línea lo cual podría estar sugiriendo que los residuos no siguen una distribución normal.
+
+
+
 ```{r}
-# test normalidad sobre residuos modelo 1
+# test normalidad sobre residuos modelo a
 # Ho) residuos tienen distribucion normal
 
 residuos_modelo_a <- modelo_a |> 
   augment() |> 
-  pull(.innov)  # o .resid
+  pull(.innov)  
 
 shapiro_modelo_a <- shapiro.test(residuos_modelo_a)
 pv_shapiro_modelo_a <- shapiro_modelo_a$p.value
@@ -741,30 +785,43 @@ pv_shapiro_modelo_a <- shapiro_modelo_a$p.value
 shapiro_modelo_a
 ```
 
-<!-- Supuesto 4: parametros no redundantes -->
+Se realiza la prueba de Shapiro-Wilk y se concluye en base a la evidencia muestral que los residuos del modelo A no siguen una distribución normal a un 5% de significación ($p-value=$ `r pv_shapiro_modelo_a`).
+
+
+<!-- Supuesto 4: parsimonia -->
 
 ```{r}
 # parametros estimados junto a p_value q evalua 
 # Ho) parametro = 0
-tidy(modelo_a)
+tidy(modelo_a) |> 
+  select(term, estimate, std.error, p.value)
 ```
+
+Según los resultados de la tabla y en base a la evidencia muestral, se concluye que de los cinco parámetros del modelo A, sólo los parámetros $\phi_1$, $\theta_1$ y $\Theta_1$ son no nulos, al 5% de nivel de significación. En otras palabras, el modelo A no cumple el supuesto de parsimonia.
+
+
+
 
 <!-- Supuesto 5: parametros no redundantes -->
 
 ```{r}
-fit_a <- modelo_a$ma[[1]]$fit$model   # objeto Arima 
+fit_a <- modelo_a$ma[[1]]$fit$model   
 cov2cor(fit_a$var.coef)
 ```
+Según la matriz, se observa que la mayoría de las correlaciones estimadas entre pares de parámetros son bajas a excepción de $\hat{corr}(\theta_1, \theta_3) = 0.50746291$ y $\hat{corr}(\theta_1, \theta_2) = -0.47563231$ las cuales son moderadas. Sin embargo, retomando el hecho de que los parámetros $\theta_2$ y $\theta_3$ no resultan significativos, se concluye que el modelo A verifica el supuesto de parámetros no redundantes.
 
 
 
-<!-- Supuesto 6: modelo admisible. como lo miro si tengo un ma3 en parte reg? como veo si es invertible en parter reg? -->
+
+<!-- Supuesto 6: modelo admisible. como lo miro si tengo un ma3 en parte reg? como veo si es invertible en parte reg? -->
 
 
 
 
 
 ### Resumen
+
+
 
 por lo tanto continuo con tales modelos...
 
